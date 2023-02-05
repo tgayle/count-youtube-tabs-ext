@@ -1,3 +1,7 @@
+import {config} from 'dotenv';
+
+config();
+
 import { defineManifest } from "@crxjs/vite-plugin";
 
 export default defineManifest({
@@ -13,8 +17,8 @@ export default defineManifest({
     service_worker: "src/background.ts",
   },
   oauth2: {
-    client_id: process.env.GOOGLE_CLIENT_ID!,
+    client_id: process.env.VITE_GOOGLE_CLIENT_ID!,
     scopes: ["https://www.googleapis.com/auth/youtube.readonly"],
   },
-  key: process.env.EXT_PUB_KEY,
+  key: process.env.VITE_EXT_PUB_KEY,
 });

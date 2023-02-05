@@ -10,7 +10,7 @@ export type VideoWithInfo = {
 
 export type VideoId = string;
 
-const KEY = process.env.GOOGLE_API_KEY;
+const KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
 if (!KEY) throw new Error("No API key provided");
 
