@@ -10,8 +10,12 @@ type Props = {
 export function ActiveTabsPane({ sort }: Props) {
   const [data, setData] = useState<DataResponse>();
 
-  const tabs = data?.tabs ?? {};
-  const videoInfo = data?.videoData ?? {};
+  const {
+    tabs = {},
+    videoData: videoInfo = {},
+    remainingLength: adjustedVideoLength = 0,
+    totalLength: unadjustedVideoLength = 0,
+  } = data ?? {};
 
   useEffect(() => {
     const refresh = async () => {
@@ -34,9 +38,8 @@ export function ActiveTabsPane({ sort }: Props) {
       <PopupHeader
         tabCount={Object.keys(tabs).length}
         location="tabs"
-        totalLength={Object.values(videoInfo)
-          .map((it) => it?.duration ?? 0)
-          .reduce((a, b) => a + b, 0)}
+        totalLength={unadjustedVideoLength}
+        remainingLength={adjustedVideoLength}
       />
 
       <ul>
@@ -53,7 +56,6 @@ export function ActiveTabsPane({ sort }: Props) {
             }
           })
           .map((videoId) => {
-            console.log(videoId, videoInfo);
             return (
               <VideoItem
                 key={videoId}

@@ -1,4 +1,4 @@
-import {config} from 'dotenv';
+import { config } from "dotenv";
 
 config();
 
@@ -8,7 +8,8 @@ export default defineManifest({
   name: "Count Youtube Tab Length",
   version: "1.0.0",
   manifest_version: 3,
-  permissions: ["tabs", "identity"],
+  permissions: ["tabs", "identity", "scripting"],
+  host_permissions: ["https://www.youtube.com/watch*"],
   action: {
     default_popup: "src/popup.html",
   },

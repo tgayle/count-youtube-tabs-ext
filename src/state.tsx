@@ -7,3 +7,8 @@ export const sortOrderAtom = atomWithStorage<"asc" | "desc">(
   "sortOrder",
   "desc"
 );
+
+export const lengthTypeAtom = atomWithStorage<"total" | "remaining">(
+  "lengthDisplayType",
+  "total"
+);

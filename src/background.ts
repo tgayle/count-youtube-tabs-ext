@@ -14,6 +14,8 @@ export type DataResponse = {
   authed: true | false | null;
   videoData: Record<VideoId, VideoWithInfo>;
   tabs: Record<string, chrome.tabs.Tab>;
+  totalLength: number;
+  remainingLength: number;
 };
 
 preloadVideoRuntime();
@@ -21,11 +23,22 @@ preloadVideoRuntime();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message !== "data") return;
 
-  sendResponse({
-    authed,
-    tabs,
-    videoData,
-  } as DataResponse);
+  (async () => {
+    const unadjustedVideoLength = Object.values(videoData)
+      .map((it) => it?.duration ?? 0)
+      .reduce((a, b) => a + b, 0);
+
+    const adjustedLength =
+      unadjustedVideoLength - (await getActualTimeWatched());
+
+    sendResponse({
+      authed,
+      tabs,
+      videoData,
+      totalLength: unadjustedVideoLength,
+      remainingLength: adjustedLength,
+    } satisfies DataResponse);
+  })();
   return true;
 });
 
@@ -80,9 +93,10 @@ async function preloadVideoRuntime() {
 }
 
 async function onVideoData() {
-  const duration = Object.values(videoData)
-    .map((it) => it?.duration ?? 0)
-    .reduce((a, b) => a + b, 0);
+  const duration =
+    Object.values(videoData)
+      .map((it) => it?.duration ?? 0)
+      .reduce((a, b) => a + b, 0) - (await getActualTimeWatched());
 
   const ONE_MINUTE = 60;
   const ONE_HOUR = 60 * 60;
@@ -120,13 +134,59 @@ async function onUnauthenticated() {
 }
 
 async function getTabs() {
-  const chromeTabs = await chrome.tabs.query({});
-  const videos = chromeTabs.filter((tab) =>
-    tab.url?.includes("youtube.com/watch")
-  );
+  const videos = await chrome.tabs.query({
+    url: "https://www.youtube.com/watch*",
+  });
   tabs = videos.reduce((map, tab) => {
     map[new URL(tab.url!).searchParams.get("v")!] = tab;
     return map;
   }, {} as Record<VideoId, chrome.tabs.Tab>);
   return tabs;
+}
+
+async function getActualTimeWatched() {
+  const videoTabs = await chrome.tabs.query({
+    discarded: false,
+    url: "https://www.youtube.com/watch*",
+  });
+
+  const getVideoProgress = videoTabs.map(async (tab) => {
+    if (tab.status !== "complete") {
+      return { id: tab.id, currentTime: 0, duration: 0 };
+    }
+
+    const [result] = await chrome.scripting.executeScript({
+      target: {
+        tabId: tab.id!,
+      },
+      func: () => {
+        console.log("hello tab!", tab.id);
+        const video = document.querySelector("video");
+
+        if (!video) return null;
+
+        const duration = video.duration;
+        const currentTime = video.currentTime;
+
+        const r = {
+          duration,
+          currentTime,
+        };
+
+        console.log("[YT Length Counter]:", r);
+
+        return r;
+      },
+    });
+
+    return { id: tab.id, ...result.result };
+  });
+
+  const videoProgress = await Promise.all(getVideoProgress);
+
+  const totalTimeWatched = videoProgress
+    .map((it) => it.currentTime ?? 0)
+    .reduce((a, b) => a + b, 0);
+
+  return +totalTimeWatched.toFixed();
 }
