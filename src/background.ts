@@ -13,6 +13,7 @@ let tabs: Record<string, chrome.tabs.Tab> = {};
 export type DataResponse = {
   authed: true | false | null;
   videoData: Record<VideoId, VideoWithInfo>;
+  videoProgress: Record<string, number>;
   tabs: Record<string, chrome.tabs.Tab>;
   totalLength: number;
   remainingLength: number;
@@ -28,13 +29,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .map((it) => it?.duration ?? 0)
       .reduce((a, b) => a + b, 0);
 
-    const adjustedLength =
-      unadjustedVideoLength - (await getActualTimeWatched());
+    const actualVideoProgress = await getActualTimeWatched();
+    const adjustedLength = unadjustedVideoLength - actualVideoProgress.total;
 
     sendResponse({
       authed,
       tabs,
       videoData,
+      videoProgress: actualVideoProgress.videos,
       totalLength: unadjustedVideoLength,
       remainingLength: adjustedLength,
     } satisfies DataResponse);
@@ -96,7 +98,7 @@ async function onVideoData() {
   const duration =
     Object.values(videoData)
       .map((it) => it?.duration ?? 0)
-      .reduce((a, b) => a + b, 0) - (await getActualTimeWatched());
+      .reduce((a, b) => a + b, 0) - (await getActualTimeWatched()).total;
 
   const ONE_MINUTE = 60;
   const ONE_HOUR = 60 * 60;
@@ -160,7 +162,7 @@ async function getActualTimeWatched() {
         tabId: tab.id!,
       },
       func: () => {
-        console.log("hello tab!", tab.id);
+        // console.log("hello tab!", tab.id);
         const video = document.querySelector("video");
 
         if (!video) return null;
@@ -188,5 +190,11 @@ async function getActualTimeWatched() {
     .map((it) => it.currentTime ?? 0)
     .reduce((a, b) => a + b, 0);
 
-  return +totalTimeWatched.toFixed();
+  return {
+    total: +totalTimeWatched.toFixed(),
+    videos: videoProgress.reduce((map, it) => {
+      map[it.id!] = +it.currentTime!.toFixed();
+      return map;
+    }, {} as Record<string, number>),
+  };
 }
