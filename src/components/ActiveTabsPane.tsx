@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
+import { useAtomValue } from "jotai";
+import { onlyShowVideosWithProgressAtom } from "../state";
 
 type Props = {
   sort: string;
@@ -9,12 +11,16 @@ type Props = {
 
 export function ActiveTabsPane({ sort }: Props) {
   const [data, setData] = useState<DataResponse>();
+  const onlyShowVideosWithProgress = useAtomValue(
+    onlyShowVideosWithProgressAtom
+  );
 
   const {
     tabs = {},
     videoData: videoInfo = {},
     remainingLength: adjustedVideoLength = 0,
     totalLength: unadjustedVideoLength = 0,
+    videoProgress = {},
   } = data ?? {};
 
   useEffect(() => {
@@ -45,6 +51,24 @@ export function ActiveTabsPane({ sort }: Props) {
       <ul>
         {Object.keys(tabs)
           .sort((a, b) => {
+            if (onlyShowVideosWithProgress) {
+              const aProgress =
+                (videoProgress[tabs[a].id ?? ""] ?? 0) /
+                (videoInfo[a]?.duration ?? 0);
+              const bProgress =
+                (videoProgress[tabs[b].id ?? ""] ?? 0) /
+                (videoInfo[b]?.duration ?? 0);
+
+              let direction =
+                aProgress < bProgress ? -1 : aProgress > bProgress ? 1 : 0;
+
+              if (sort === "desc") {
+                direction *= -1;
+              }
+
+              return direction;
+            }
+
             if (sort === "asc") {
               return (
                 (videoInfo[a]?.duration ?? 0) - (videoInfo[b]?.duration ?? 0)
@@ -56,11 +80,17 @@ export function ActiveTabsPane({ sort }: Props) {
             }
           })
           .map((videoId) => {
+            const watchedDuration = videoProgress[tabs[videoId].id ?? ""];
+            if (onlyShowVideosWithProgress && !watchedDuration) {
+              return null;
+            }
+
             return (
               <VideoItem
                 key={videoId}
                 tab={tabs[videoId]}
                 info={videoInfo[videoId]}
+                progress={watchedDuration}
               />
             );
           })}

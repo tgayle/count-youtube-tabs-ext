@@ -12,3 +12,8 @@ export const lengthTypeAtom = atomWithStorage<"total" | "remaining">(
   "lengthDisplayType",
   "total"
 );
+
+export const onlyShowVideosWithProgressAtom = atomWithStorage(
+  "onlyShowVideosWithProgress",
+  false
+);

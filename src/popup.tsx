@@ -4,13 +4,20 @@ import { createRoot } from "react-dom/client";
 import { getUserToken } from "./api";
 import { ActiveTabsPane } from "./components/ActiveTabsPane";
 import { useAtom } from "jotai";
-import { authenticatedAtom, sortOrderAtom } from "./state";
+import {
+  authenticatedAtom,
+  onlyShowVideosWithProgressAtom,
+  sortOrderAtom,
+} from "./state";
 
 createRoot(document.querySelector("#root")!).render(<Popup />);
 
 function Popup() {
   const [sort, setSort] = useAtom(sortOrderAtom);
   const [authenticated] = useAtom(authenticatedAtom);
+  const [onlyShowVideosWithProgress, setVideoFilter] = useAtom(
+    onlyShowVideosWithProgressAtom
+  );
 
   return (
     <div className="flex flex-col max-h-44">
@@ -23,13 +30,24 @@ function Popup() {
           </span>
           <input
             type="checkbox"
-            className="toggle"
+            className="checkbox checkbox-primary"
             onClick={() => {
               setSort(sort == "desc" ? "asc" : "desc");
             }}
             checked={sort == "asc"}
           />
         </label>
+        <div className="form-control">
+          <label className="label cursor-pointer">
+            <span className="label-text">In Progress Videos</span>
+            <input
+              type="checkbox"
+              checked={onlyShowVideosWithProgress}
+              className="checkbox checkbox-primary"
+              onChange={() => setVideoFilter(!onlyShowVideosWithProgress)}
+            />
+          </label>
+        </div>
       </div>
 
       <ActiveTabsPane sort={sort} />
