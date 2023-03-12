@@ -8,7 +8,7 @@ export default defineManifest({
   name: "Count Youtube Tab Length",
   version: "1.0.0",
   manifest_version: 3,
-  permissions: ["tabs", "identity", "scripting"],
+  permissions: ["tabs", "identity", "scripting", "contextMenus"],
   host_permissions: ["https://www.youtube.com/watch*"],
   action: {
     default_popup: "src/popup.html",

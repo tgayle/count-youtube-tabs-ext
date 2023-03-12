@@ -146,11 +146,15 @@ async function getTabs() {
   return tabs;
 }
 
-async function getActualTimeWatched() {
-  const videoTabs = await chrome.tabs.query({
+async function getAllVideoTabs() {
+  return await chrome.tabs.query({
     discarded: false,
     url: "https://www.youtube.com/watch*",
   });
+}
+
+async function getActualTimeWatched() {
+  const videoTabs = await getAllVideoTabs();
 
   const getVideoProgress = videoTabs.map(async (tab) => {
     if (tab.status !== "complete") {
@@ -198,3 +202,25 @@ async function getActualTimeWatched() {
     }, {} as Record<string, number>),
   };
 }
+
+chrome.contextMenus.create({
+  id: "pause-all",
+  title: "Pause All Videos",
+  contexts: ["action"],
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== "pause-all") return;
+  const videoTabs = await getAllVideoTabs();
+
+  videoTabs.forEach((video) => {
+    chrome.scripting.executeScript({
+      target: { tabId: video.id! },
+      func: () => {
+        const video = document.querySelector("video");
+        if (!video || video.paused) return;
+        video.pause();
+      },
+    });
+  });
+});
