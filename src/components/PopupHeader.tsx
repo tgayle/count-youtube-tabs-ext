@@ -1,36 +1,32 @@
-import React from "react";
 import { secondsToDuration } from "../util";
-import { useAtom } from "jotai";
 import { lengthTypeAtom } from "../state";
+import { Accessor } from "solid-js";
 
 export function PopupHeader({
   tabCount,
-  location,
   totalLength,
   remainingLength,
 }: {
-  tabCount: number;
+  tabCount: Accessor<number>;
   location: "tabs" | "videos";
-  totalLength: number;
-  remainingLength: number;
+  totalLength: Accessor<number>;
+  remainingLength: Accessor<number>;
 }) {
-  const [lengthType, setShowRemaining] = useAtom(lengthTypeAtom);
-  const showRemaining = lengthType === "remaining";
+  const [lengthType, setShowRemaining] = lengthTypeAtom;
+  const showRemaining = () => lengthType() === "remaining";
   return (
-    <div className="p-2 flex flex-col justify-center items-center">
-      <p>
-        {tabCount} {location}
-      </p>
+    <div class="p-2 flex flex-col justify-center items-center">
+      <p>{tabCount()} tabs</p>
       <p
-        className="text-xl"
+        class="text-xl"
         onClick={() =>
-          setShowRemaining(lengthType === "remaining" ? "total" : "remaining")
+          setShowRemaining(lengthType() === "remaining" ? "total" : "remaining")
         }
       >
-        {showRemaining ? "Remaining" : "Total"} Length
+        {showRemaining() ? "Remaining" : "Total"} Length
       </p>
-      <p className="text-2xl">
-        {secondsToDuration(showRemaining ? remainingLength : totalLength)}
+      <p class="text-2xl">
+        {secondsToDuration(showRemaining() ? remainingLength() : totalLength())}
       </p>
     </div>
   );

@@ -7,8 +7,10 @@
     "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
     "strict": true /* Enable all strict type-checking options. */,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-    "jsx": "react",
-    "lib": ["ESNext", "DOM"]
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "lib": ["ESNext", "DOM"],
+    "noEmit": true
   },
   "include": ["src/", "vite.config.ts"]
 }

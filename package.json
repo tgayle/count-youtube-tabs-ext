@@ -11,23 +11,20 @@
   "author": "Travis Gayle <travis@tgayle.com>",
   "license": "ISC",
   "dependencies": {
-    "jotai": "^1.11.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@formkit/auto-animate": "^1.0.0-beta.6",
+    "solid-js": "^1.7.3"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.4",
     "@types/chrome": "^0.0.200",
     "@types/node": "^18.11.19",
-    "@types/react": "^18.0.25",
-    "@types/react-dom": "^18.0.8",
-    "@vitejs/plugin-react": "^2.2.0",
     "autoprefixer": "^10.4.13",
     "daisyui": "^2.38.1",
     "dotenv": "^16.0.3",
     "postcss": "^8.4.18",
     "tailwindcss": "^3.2.2",
-    "typescript": "^4.8.4",
-    "vite": "^3.2.2"
+    "typescript": "^5.0.4",
+    "vite": "^3.2.2",
+    "vite-plugin-solid": "^2.7.0"
   }
 }

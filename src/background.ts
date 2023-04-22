@@ -8,12 +8,13 @@ chrome.action.setBadgeText({
 
 let authed: true | false | null = null;
 let videoData: Record<VideoId, VideoWithInfo> = {};
-let tabs: Record<string, chrome.tabs.Tab> = {};
+let tabs: Record<VideoId, chrome.tabs.Tab> = {};
 
+type TabId = string;
 export type DataResponse = {
   authed: true | false | null;
   videoData: Record<VideoId, VideoWithInfo>;
-  videoProgress: Record<string, number>;
+  videoProgress: Record<TabId, number>;
   tabs: Record<string, chrome.tabs.Tab>;
   totalLength: number;
   remainingLength: number;
@@ -22,6 +23,8 @@ export type DataResponse = {
 preloadVideoRuntime();
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log(message);
+
   if (message !== "data") return;
 
   (async () => {
@@ -65,7 +68,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, change) => {
 
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
   const tab = Object.values(tabs).find((t) => t.id === tabId);
-  if (!tab) return;
+  if (!tab || !tab.url) return;
 
   const videoId = new URL(tab.url!).searchParams.get("v")!;
   delete videoData[videoId];
@@ -78,7 +81,9 @@ async function preloadVideoRuntime() {
   const tabs = await getTabs();
   try {
     const lengths = await getVideoLengths(
-      Object.values(tabs).map((t) => t.url!)
+      Object.values(tabs)
+        .map((t) => t.url!)
+        .filter((url) => !!url)
     );
     authed = true;
 
@@ -140,6 +145,9 @@ async function getTabs() {
     url: "https://www.youtube.com/watch*",
   });
   tabs = videos.reduce((map, tab) => {
+    if (!tab.url) {
+      return map;
+    }
     map[new URL(tab.url!).searchParams.get("v")!] = tab;
     return map;
   }, {} as Record<VideoId, chrome.tabs.Tab>);
@@ -158,8 +166,12 @@ async function getActualTimeWatched() {
 
   const getVideoProgress = videoTabs.map(async (tab) => {
     if (tab.status !== "complete") {
-      return { id: tab.id, currentTime: 0, duration: 0 };
+      return null;
     }
+
+    const videoId = new URL(tab.url!).searchParams.get("v");
+
+    if (!videoId) return null;
 
     const [result] = await chrome.scripting.executeScript({
       target: {
@@ -185,21 +197,25 @@ async function getActualTimeWatched() {
       },
     });
 
-    return { id: tab.id, ...result.result };
+    return { videoId: videoId, ...result.result };
   });
 
   const videoProgress = await Promise.all(getVideoProgress);
 
   const totalTimeWatched = videoProgress
-    .map((it) => it.currentTime ?? 0)
+    .map((it) => it?.currentTime ?? 0)
     .reduce((a, b) => a + b, 0);
 
   return {
     total: +totalTimeWatched.toFixed(),
-    videos: videoProgress.reduce((map, it) => {
-      map[it.id!] = +it.currentTime!.toFixed();
-      return map;
-    }, {} as Record<string, number>),
+    videos: videoProgress
+      .filter((it): it is NonNullable<typeof it> => !!it)
+      .reduce((map, video) => {
+        if (video.videoId) {
+        }
+        map[video.videoId!] = +video.currentTime!.toFixed();
+        return map;
+      }, {} as Record<string, number>),
   };
 }
 

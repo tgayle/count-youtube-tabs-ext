@@ -1,100 +1,113 @@
-import React, { useEffect, useState } from "react";
 import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
-import { useAtomValue } from "jotai";
 import { onlyShowVideosWithProgressAtom } from "../state";
+import { Accessor, For, createSignal, onCleanup } from "solid-js";
+import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
 type Props = {
-  sort: string;
+  sort: Accessor<string>;
 };
 
+const [onlyShowVideosWithProgress] = onlyShowVideosWithProgressAtom;
+
 export function ActiveTabsPane({ sort }: Props) {
-  const [data, setData] = useState<DataResponse>();
-  const onlyShowVideosWithProgress = useAtomValue(
-    onlyShowVideosWithProgressAtom
-  );
+  const autoAnimate = createAutoAnimateDirective();
+  const [data, setData] = createSignal<DataResponse>({
+    authed: false,
+    remainingLength: 0,
+    tabs: {},
+    totalLength: 0,
+    videoData: {},
+    videoProgress: {},
+  });
 
-  const {
-    tabs = {},
-    videoData: videoInfo = {},
-    remainingLength: adjustedVideoLength = 0,
-    totalLength: unadjustedVideoLength = 0,
-    videoProgress = {},
-  } = data ?? {};
+  const refresh = async () => {
+    const res: DataResponse = await chrome.runtime.sendMessage("data");
+    setData(res);
+  };
 
-  useEffect(() => {
-    const refresh = async () => {
-      const res: DataResponse = await chrome.runtime.sendMessage("data");
-      setData(res);
-    };
+  const timer = setInterval(refresh, 250);
+  const onMessage = (message: string) => {
+    if (message === "refresh") refresh();
+  };
+  chrome.runtime.onMessage.addListener(onMessage);
 
-    refresh();
+  onCleanup(() => {
+    clearInterval(timer);
+    chrome.runtime.onMessage.removeListener(onMessage);
+  });
 
-    const onMessage = (message: string) => {
-      if (message === "refresh") refresh();
-    };
-    chrome.runtime.onMessage.addListener(onMessage);
+  const tabs = () => data()?.tabs;
+  const videoProgress = () => data()?.videoProgress;
+  const videoInfo = () => data()?.videoData;
 
-    return () => chrome.runtime.onMessage.removeListener(onMessage);
-  }, []);
+  const sortedTabs = () => {
+    const { tabs, videoProgress, videoData } = data();
+
+    function getVideoProgress(videoId: string) {
+      const video = videoData[videoId];
+      const progress = videoProgress[videoId];
+      if (!video || !progress) return 0;
+      return progress / video.duration;
+    }
+
+    return Object.keys(tabs).sort((videoIdA, videoIdB) => {
+      const videoA = videoData[videoIdA];
+      const videoB = videoData[videoIdB];
+      if (onlyShowVideosWithProgress()) {
+        const aProgress = getVideoProgress(videoIdA);
+        const bProgress = getVideoProgress(videoIdB);
+
+        let direction =
+          aProgress < bProgress ? -1 : aProgress > bProgress ? 1 : 0;
+
+        if (sort() === "desc") {
+          direction *= -1;
+        }
+
+        return direction;
+      }
+
+      if (sort() === "asc") {
+        return (videoA.duration ?? 0) - (videoB.duration ?? 0);
+      } else {
+        return (videoB?.duration ?? 0) - (videoA?.duration ?? 0);
+      }
+    });
+  };
 
   return (
-    <>
+    <div>
       <PopupHeader
-        tabCount={Object.keys(tabs).length}
+        tabCount={() => Object.keys(tabs()).length}
         location="tabs"
-        totalLength={unadjustedVideoLength}
-        remainingLength={adjustedVideoLength}
+        totalLength={() => data().totalLength}
+        remainingLength={() => data().remainingLength}
       />
 
-      <ul>
-        {Object.keys(tabs)
-          .sort((a, b) => {
-            if (onlyShowVideosWithProgress) {
-              const aProgress =
-                (videoProgress[tabs[a].id ?? ""] ?? 0) /
-                (videoInfo[a]?.duration ?? 0);
-              const bProgress =
-                (videoProgress[tabs[b].id ?? ""] ?? 0) /
-                (videoInfo[b]?.duration ?? 0);
+      <ul use:autoAnimate>
+        <For each={sortedTabs()}>
+          {(videoId) => {
+            const progress = () => videoProgress()[videoId ?? ""];
 
-              let direction =
-                aProgress < bProgress ? -1 : aProgress > bProgress ? 1 : 0;
-
-              if (sort === "desc") {
-                direction *= -1;
-              }
-
-              return direction;
-            }
-
-            if (sort === "asc") {
-              return (
-                (videoInfo[a]?.duration ?? 0) - (videoInfo[b]?.duration ?? 0)
-              );
-            } else {
-              return (
-                (videoInfo[b]?.duration ?? 0) - (videoInfo[a]?.duration ?? 0)
-              );
-            }
-          })
-          .map((videoId) => {
-            const watchedDuration = videoProgress[tabs[videoId].id ?? ""];
-            if (onlyShowVideosWithProgress && !watchedDuration) {
+            if (onlyShowVideosWithProgress() && !progress()) {
               return null;
             }
 
             return (
-              <VideoItem
-                key={videoId}
-                tab={tabs[videoId]}
-                info={videoInfo[videoId]}
-                progress={watchedDuration}
-              />
+              <>
+                <VideoItem
+                  videoId={videoId}
+                  progress={progress}
+                  tabs={tabs}
+                  videoInfo={videoInfo}
+                />
+              </>
             );
-          })}
+          }}
+        </For>
       </ul>
-    </>
+    </div>
   );
 }

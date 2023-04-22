@@ -1,50 +1,46 @@
 import "./index.css";
-import React from "react";
-import { createRoot } from "react-dom/client";
 import { getUserToken } from "./api";
 import { ActiveTabsPane } from "./components/ActiveTabsPane";
-import { useAtom } from "jotai";
 import {
   authenticatedAtom,
   onlyShowVideosWithProgressAtom,
   sortOrderAtom,
 } from "./state";
 
-createRoot(document.querySelector("#root")!).render(<Popup />);
+import { render } from "solid-js/web";
 
 function Popup() {
-  const [sort, setSort] = useAtom(sortOrderAtom);
-  const [authenticated] = useAtom(authenticatedAtom);
-  const [onlyShowVideosWithProgress, setVideoFilter] = useAtom(
-    onlyShowVideosWithProgressAtom
-  );
+  const [sort, setSort] = sortOrderAtom;
+  const [authenticated] = authenticatedAtom;
+  const [onlyShowVideosWithProgress, setVideoFilter] =
+    onlyShowVideosWithProgressAtom;
 
   return (
-    <div className="flex flex-col max-h-44">
-      {authenticated === "bad" && <RelogButton />}
+    <div class="flex flex-col max-h-44">
+      {authenticated() === "bad" && <RelogButton />}
 
-      <div className="form-control p-4">
-        <label className="label cursor-pointer">
-          <span className="label-text">
-            {sort == "desc" ? "Descending" : "Ascending"}
+      <div class="form-control p-4">
+        <label class="label cursor-pointer">
+          <span class="label-text">
+            {sort() == "desc" ? "Descending" : "Ascending"}
           </span>
           <input
             type="checkbox"
-            className="checkbox checkbox-primary"
+            class="checkbox checkbox-primary"
             onClick={() => {
-              setSort(sort == "desc" ? "asc" : "desc");
+              setSort(sort() == "desc" ? "asc" : "desc");
             }}
-            checked={sort == "asc"}
+            checked={sort() == "asc"}
           />
         </label>
-        <div className="form-control">
-          <label className="label cursor-pointer">
-            <span className="label-text">In Progress Videos</span>
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text">In Progress Videos</span>
             <input
               type="checkbox"
-              checked={onlyShowVideosWithProgress}
-              className="checkbox checkbox-primary"
-              onChange={() => setVideoFilter(!onlyShowVideosWithProgress)}
+              checked={onlyShowVideosWithProgress()}
+              class="checkbox checkbox-primary"
+              onChange={() => setVideoFilter(!onlyShowVideosWithProgress())}
             />
           </label>
         </div>
@@ -58,7 +54,7 @@ function Popup() {
 function RelogButton() {
   return (
     <button
-      className="absolute right-4 top-2 text-2xl btn btn-ghost aspect-square"
+      class="absolute right-4 top-2 text-2xl btn btn-ghost aspect-square"
       onClick={() => {
         getUserToken();
       }}
@@ -74,3 +70,5 @@ function clsx(...names: any[]): string {
     .filter((it): it is string => !!it)
     .join(" ");
 }
+
+render(() => <Popup />, document.querySelector("#root")!);
