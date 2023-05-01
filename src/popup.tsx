@@ -46,7 +46,7 @@ function Popup() {
         </div>
       </div>
 
-      <ActiveTabsPane sort={sort} />
+      <ActiveTabsPane sort={sort()} />
     </div>
   );
 }

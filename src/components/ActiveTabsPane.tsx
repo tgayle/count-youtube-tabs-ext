@@ -2,16 +2,16 @@ import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
 import { onlyShowVideosWithProgressAtom } from "../state";
-import { Accessor, For, createSignal, onCleanup } from "solid-js";
+import { For, createSignal, onCleanup } from "solid-js";
 import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
 type Props = {
-  sort: Accessor<string>;
+  sort: string;
 };
 
 const [onlyShowVideosWithProgress] = onlyShowVideosWithProgressAtom;
 
-export function ActiveTabsPane({ sort }: Props) {
+export function ActiveTabsPane(props: Props) {
   const autoAnimate = createAutoAnimateDirective();
   const [data, setData] = createSignal<DataResponse>({
     authed: false,
@@ -62,14 +62,14 @@ export function ActiveTabsPane({ sort }: Props) {
         let direction =
           aProgress < bProgress ? -1 : aProgress > bProgress ? 1 : 0;
 
-        if (sort() === "desc") {
+        if (props.sort === "desc") {
           direction *= -1;
         }
 
         return direction;
       }
 
-      if (sort() === "asc") {
+      if (props.sort === "asc") {
         return (videoA.duration ?? 0) - (videoB.duration ?? 0);
       } else {
         return (videoB?.duration ?? 0) - (videoA?.duration ?? 0);
@@ -80,10 +80,9 @@ export function ActiveTabsPane({ sort }: Props) {
   return (
     <div>
       <PopupHeader
-        tabCount={() => Object.keys(tabs()).length}
-        location="tabs"
-        totalLength={() => data().totalLength}
-        remainingLength={() => data().remainingLength}
+        tabCount={Object.keys(tabs()).length}
+        totalLength={data().totalLength}
+        remainingLength={data().remainingLength}
       />
 
       <ul use:autoAnimate>
@@ -99,9 +98,9 @@ export function ActiveTabsPane({ sort }: Props) {
               <>
                 <VideoItem
                   videoId={videoId}
-                  progress={progress}
-                  tabs={tabs}
-                  videoInfo={videoInfo}
+                  progress={progress()}
+                  tabs={tabs()}
+                  videoInfo={videoInfo()}
                 />
               </>
             );

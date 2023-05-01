@@ -1,33 +1,33 @@
-import { Accessor, Show } from "solid-js";
+import { Show } from "solid-js";
 import { VideoId, VideoWithInfo } from "../api";
 import { secondsToDuration } from "../util";
 
 type Props = {
   videoId: string;
-  tabs: Accessor<Record<VideoId, chrome.tabs.Tab>>;
-  videoInfo: Accessor<Record<VideoId, VideoWithInfo>>;
-  progress: Accessor<number>;
+  tabs: Record<VideoId, chrome.tabs.Tab>;
+  videoInfo: Record<VideoId, VideoWithInfo>;
+  progress: number;
 };
 
-export function VideoItem({ tabs, videoId, videoInfo, progress }: Props) {
-  const tab = () => tabs()[videoId];
-  const info = () => videoInfo()[videoId];
+export function VideoItem(props: Props) {
+  const tab = () => props.tabs[props.videoId];
+  const info = () => props.videoInfo[props.videoId];
 
   return (
     <li class="p-4 shadow-md m-2 flex justify-between">
       <div class="pr-1 flex flex-col justify-between grow">
         <p>{tab().title}</p>
 
-        <Show when={progress() > 0}>
+        <Show when={props.progress > 0}>
           <div
             class="tooltip w-full"
-            data-tip={`${secondsToDuration(progress())}/${secondsToDuration(
+            data-tip={`${secondsToDuration(props.progress)}/${secondsToDuration(
               info()?.duration ?? 0
             )}`}
           >
             <progress
               class="progress my-2 pr-2 grow"
-              value={progress()}
+              value={props.progress}
               max={info()?.duration ?? 0}
             ></progress>
           </div>
