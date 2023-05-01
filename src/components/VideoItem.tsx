@@ -33,22 +33,24 @@ export function VideoItem(props: Props) {
           </div>
         </Show>
       </div>
-      {info() && (
-        <div class="flex flex-col gap-2">
-          <span class="badge badge-primary">
-            {secondsToDuration(info()?.duration ?? 0)}
-          </span>
-          <button
-            class="btn btn-sm btn-outline"
-            onClick={async () => {
-              chrome.tabs.update(tab().id!, { active: true });
-              chrome.windows.update(tab().windowId!, { focused: true });
-            }}
-          >
-            Go
-          </button>
-        </div>
-      )}
+      <Show when={info()}>
+        {(info) => (
+          <div class="flex flex-col gap-2">
+            <span class="badge badge-primary">
+              {secondsToDuration(info().duration ?? 0)}
+            </span>
+            <button
+              class="btn btn-sm btn-outline"
+              onClick={async () => {
+                chrome.tabs.update(tab().id!, { active: true });
+                chrome.windows.update(tab().windowId!, { focused: true });
+              }}
+            >
+              Go
+            </button>
+          </div>
+        )}
+      </Show>
     </li>
   );
 }

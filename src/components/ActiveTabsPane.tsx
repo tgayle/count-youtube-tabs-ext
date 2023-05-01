@@ -28,6 +28,7 @@ export function ActiveTabsPane(props: Props) {
   };
 
   const timer = setInterval(refresh, 250);
+  refresh();
   const onMessage = (message: string) => {
     if (message === "refresh") refresh();
   };
@@ -95,14 +96,12 @@ export function ActiveTabsPane(props: Props) {
             }
 
             return (
-              <>
-                <VideoItem
-                  videoId={videoId}
-                  progress={progress()}
-                  tabs={tabs()}
-                  videoInfo={videoInfo()}
-                />
-              </>
+              <VideoItem
+                videoId={videoId}
+                progress={progress()}
+                tabs={tabs()}
+                videoInfo={videoInfo()}
+              />
             );
           }}
         </For>

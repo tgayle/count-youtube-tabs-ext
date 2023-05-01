@@ -7,7 +7,7 @@ import {
   sortOrderAtom,
 } from "./state";
 
-import { render } from "solid-js/web";
+import { Show, render } from "solid-js/web";
 
 function Popup() {
   const [sort, setSort] = sortOrderAtom;
@@ -17,7 +17,9 @@ function Popup() {
 
   return (
     <div class="flex flex-col max-h-44">
-      {authenticated() === "bad" && <RelogButton />}
+      <Show when={authenticated() === "bad"}>
+        <RelogButton />
+      </Show>
 
       <div class="form-control p-4">
         <label class="label cursor-pointer">
