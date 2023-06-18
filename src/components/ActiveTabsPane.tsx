@@ -71,7 +71,7 @@ export function ActiveTabsPane(props: Props) {
       }
 
       if (props.sort === "asc") {
-        return (videoA.duration ?? 0) - (videoB.duration ?? 0);
+        return (videoA?.duration ?? 0) - (videoB?.duration ?? 0);
       } else {
         return (videoB?.duration ?? 0) - (videoA?.duration ?? 0);
       }

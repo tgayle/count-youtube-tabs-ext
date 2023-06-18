@@ -14,15 +14,12 @@ const KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
 if (!KEY) throw new Error("No API key provided");
 
-export const getVideoLengths = async (
-  urls: string[]
+export const getVideoLengthsById = async (
+  ids: string[]
 ): Promise<VideoWithInfo[]> => {
   const token = await getUserToken();
 
-  const responses = chunk(
-    urls.map((url) => new URL(url).searchParams.get("v") ?? ""),
-    50
-  ).map(async (ids) => {
+  const responses = chunk(ids, 50).map(async (ids) => {
     const params = new URLSearchParams({
       key: KEY,
       part: "snippet,contentDetails",
