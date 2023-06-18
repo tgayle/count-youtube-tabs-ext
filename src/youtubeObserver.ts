@@ -1,4 +1,4 @@
-import { getTabsByVideoId } from "./aggregation";
+import { getAllVideoTabs, getTabsByVideoId } from "./aggregation";
 import { VideoId } from "./api";
 
 export class YoutubeObserver {
@@ -57,15 +57,27 @@ export class YoutubeObserver {
   }
 
   private initTabRemovedListener() {
-    chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+    chrome.tabs.onRemoved.addListener(async (tabId) => {
       const tab = this.findCachedTabByTabId(tabId);
       if (!tab?.url) return;
       if (!tab.url.includes("youtube.com/watch")) return;
 
       const videoId = new URL(tab.url).searchParams.get("v")!;
 
-      delete this.openVideos[videoId];
-      this.onTabRemoved?.(videoId, tab);
+      console.log("Closed tab:", videoId, tab.url);
+
+      const videoTabs = (await getAllVideoTabs()).filter(
+        (it) => it.url && new URL(it.url).searchParams.get("v") === videoId
+      );
+
+      // Only remove the video data if no other tabs are open to the same video.
+      // Otherwise, make openVideos reference the new tab.
+      if (videoTabs.length === 0) {
+        delete this.openVideos[videoId];
+        this.onTabRemoved?.(videoId, tab);
+      } else {
+        this.openVideos[videoId] = videoTabs[0];
+      }
     });
   }
 

@@ -1,6 +1,6 @@
 import { VideoId } from "./api";
 
-async function getAllVideoTabs() {
+export async function getAllVideoTabs() {
   return await chrome.tabs.query({
     discarded: false,
     url: "https://www.youtube.com/watch*",
