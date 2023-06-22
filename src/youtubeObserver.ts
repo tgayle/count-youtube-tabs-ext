@@ -5,12 +5,12 @@ export class YoutubeObserver {
   private openVideos: Record<VideoId, chrome.tabs.Tab> = {};
 
   onTabUpdated?: (
-    videoId: string,
+    videoId: VideoId,
     tab: chrome.tabs.Tab
   ) => void | Promise<void>;
   onTabRemoved?: (
-    videoId: string,
-    tab: chrome.tabs.Tab
+    videoId: VideoId,
+    tab: chrome.tabs.Tab | null
   ) => void | Promise<void>;
 
   get openVideoTabsById() {
@@ -33,27 +33,50 @@ export class YoutubeObserver {
   }
 
   private initTabUpdatedListener() {
-    chrome.tabs.onUpdated.addListener(async (tabId, change) => {
+    chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
       const VIDEO_STR = "youtube.com/watch";
-      const tab = await chrome.tabs.get(tabId);
       const previousTabInfo = this.findCachedTabByTabId(tabId);
 
-      if (change.title) return;
       if (!tab?.url) return;
       if (!tab.url.includes(VIDEO_STR)) {
         if (previousTabInfo?.url?.includes(VIDEO_STR)) {
           const videoId = new URL(previousTabInfo.url).searchParams.get("v")!;
-          delete this.openVideos[videoId];
-          await this.onTabRemoved?.(videoId, previousTabInfo);
+          await this.handleTabRemoval(tabId, videoId);
         }
         return;
       }
 
       const videoId = new URL(tab.url).searchParams.get("v")!;
+      const previousVideoId = previousTabInfo?.url
+        ? new URL(previousTabInfo.url).searchParams.get("v")!
+        : null;
+
+      if (previousTabInfo && previousVideoId && previousVideoId !== videoId) {
+        await this.handleTabRemoval(tabId, previousVideoId);
+      }
 
       this.openVideos[videoId] = tab;
       await this.onTabUpdated?.(videoId, tab);
     });
+  }
+
+  private async handleTabRemoval(tabId: number, videoId: string) {
+    const tab = this.findCachedTabByTabId(tabId);
+
+    if (!tab) return;
+
+    const videoTabs = (await getAllVideoTabs()).filter(
+      (it) => it.url && new URL(it.url).searchParams.get("v") === videoId
+    );
+
+    // Only remove the video data if no other tabs are open to the same video.
+    // Otherwise, make openVideos reference the new tab.
+    if (videoTabs.length === 0) {
+      delete this.openVideos[videoId];
+      this.onTabRemoved?.(videoId, tab);
+    } else {
+      this.openVideos[videoId] = videoTabs[0];
+    }
   }
 
   private initTabRemovedListener() {
@@ -64,20 +87,7 @@ export class YoutubeObserver {
 
       const videoId = new URL(tab.url).searchParams.get("v")!;
 
-      console.log("Closed tab:", videoId, tab.url);
-
-      const videoTabs = (await getAllVideoTabs()).filter(
-        (it) => it.url && new URL(it.url).searchParams.get("v") === videoId
-      );
-
-      // Only remove the video data if no other tabs are open to the same video.
-      // Otherwise, make openVideos reference the new tab.
-      if (videoTabs.length === 0) {
-        delete this.openVideos[videoId];
-        this.onTabRemoved?.(videoId, tab);
-      } else {
-        this.openVideos[videoId] = videoTabs[0];
-      }
+      await this.handleTabRemoval(tabId, videoId);
     });
   }
 
@@ -85,6 +95,18 @@ export class YoutubeObserver {
     const getVideoProgress = Object.entries(this.openVideos).map(
       async ([videoId, tab]) => {
         if (tab.status !== "complete") {
+          return null;
+        }
+
+        try {
+          const currentTabState = await chrome.tabs.get(tab.id!);
+
+          if (!currentTabState) {
+            await this.handleTabRemoval(tab.id!, videoId);
+            return null;
+          }
+        } catch (e) {
+          await this.handleTabRemoval(tab.id!, videoId);
           return null;
         }
 
