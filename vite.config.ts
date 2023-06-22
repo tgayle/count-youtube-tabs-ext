@@ -5,4 +5,8 @@ import solid from "vite-plugin-solid";
 
 export default defineConfig({
   plugins: [solid(), crx({ manifest })],
+  build: {
+    minify: false,
+    sourcemap: true,
+  },
 });
