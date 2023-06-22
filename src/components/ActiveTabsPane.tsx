@@ -2,7 +2,8 @@ import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
 import { onlyShowVideosWithProgressAtom } from "../state";
-import { For, createSignal, onCleanup } from "solid-js";
+import { For, onCleanup } from "solid-js";
+import { createStore } from "solid-js/store";
 import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
 type Props = {
@@ -13,7 +14,7 @@ const [onlyShowVideosWithProgress] = onlyShowVideosWithProgressAtom;
 
 export function ActiveTabsPane(props: Props) {
   const autoAnimate = createAutoAnimateDirective();
-  const [data, setData] = createSignal<DataResponse>({
+  const [data, setData] = createStore<DataResponse>({
     authed: false,
     remainingLength: 0,
     tabs: {},
@@ -23,7 +24,7 @@ export function ActiveTabsPane(props: Props) {
   });
 
   const refresh = async () => {
-    const res: DataResponse = await chrome.runtime.sendMessage("data");
+    const res = await chrome.runtime.sendMessage<string, DataResponse>("data");
     setData(res);
   };
 
@@ -39,12 +40,12 @@ export function ActiveTabsPane(props: Props) {
     chrome.runtime.onMessage.removeListener(onMessage);
   });
 
-  const tabs = () => data()?.tabs;
-  const videoProgress = () => data()?.videoProgress;
-  const videoInfo = () => data()?.videoData;
+  const tabs = () => data.tabs;
+  const videoProgress = () => data.videoProgress;
+  const videoInfo = () => data.videoData;
 
   const sortedTabs = () => {
-    const { tabs, videoProgress, videoData } = data();
+    const { tabs, videoProgress, videoData } = data;
 
     function getVideoProgress(videoId: string) {
       const video = videoData[videoId];
@@ -82,8 +83,8 @@ export function ActiveTabsPane(props: Props) {
     <div>
       <PopupHeader
         tabCount={Object.keys(tabs()).length}
-        totalLength={data().totalLength}
-        remainingLength={data().remainingLength}
+        totalLength={data.totalLength}
+        remainingLength={data.remainingLength}
       />
 
       <ul use:autoAnimate>
@@ -99,8 +100,8 @@ export function ActiveTabsPane(props: Props) {
               <VideoItem
                 videoId={videoId}
                 progress={progress()}
-                tabs={tabs()}
-                videoInfo={videoInfo()}
+                tab={tabs()[videoId]}
+                info={videoInfo()[videoId]}
               />
             );
           }}
