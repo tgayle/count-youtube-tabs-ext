@@ -94,7 +94,7 @@ export class YoutubeObserver {
   async getRemainingVideoRuntime() {
     const getVideoProgress = Object.entries(this.openVideos).map(
       async ([videoId, tab]) => {
-        if (tab.status !== "complete") {
+        if (tab.status !== "complete" || !tab.url?.includes("youtube.com")) {
           return null;
         }
 
@@ -110,30 +110,34 @@ export class YoutubeObserver {
           return null;
         }
 
-        const [result] = await chrome.scripting.executeScript({
-          target: {
-            tabId: tab.id!,
-          },
-          func: () => {
-            const video = document.querySelector("video");
+        try {
+          const [result] = await chrome.scripting.executeScript({
+            target: {
+              tabId: tab.id!,
+            },
+            func: () => {
+              const video = document.querySelector("video");
 
-            if (!video) return null;
+              if (!video) return null;
 
-            const duration = video.duration;
-            const currentTime = video.currentTime;
+              const duration = video.duration;
+              const currentTime = video.currentTime;
 
-            const r = {
-              duration,
-              currentTime,
-            };
+              const r = {
+                duration,
+                currentTime,
+              };
 
-            console.log("[YT Length Counter]:", r);
+              console.log("[YT Length Counter]:", r);
 
-            return r;
-          },
-        });
+              return r;
+            },
+          });
 
-        return { videoId: videoId, ...result.result };
+          return { videoId: videoId, ...result.result };
+        } catch (e) {
+          console.error("couldn't query tab", tab);
+        }
       }
     );
 

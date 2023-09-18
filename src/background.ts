@@ -60,6 +60,9 @@ async function submitNewVideos(...ids: VideoId[]) {
   }
 }
 
+globalThis.tabWatcher = tabWatcher;
+globalThis.videoFetcher = videoFetcher;
+
 tabWatcher.onTabUpdated = async (videoId) => {
   await submitNewVideos(videoId);
 };
