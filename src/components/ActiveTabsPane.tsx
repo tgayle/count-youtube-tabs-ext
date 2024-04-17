@@ -2,7 +2,7 @@ import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
 import { onlyShowVideosWithProgressAtom } from "../state";
-import { For, onCleanup } from "solid-js";
+import { For, onCleanup, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
@@ -44,15 +44,29 @@ export function ActiveTabsPane(props: Props) {
   const videoProgress = () => data.videoProgress;
   const videoInfo = () => data.videoData;
 
-  const sortedTabs = () => {
-    const { tabs, videoProgress, videoData } = data;
+  const getVideoProgress = (videoId: string) => {
+    const videoData = data.videoData;
+    const videoProgress = data.videoProgress;
 
-    function getVideoProgress(videoId: string) {
-      const video = videoData[videoId];
-      const progress = videoProgress[videoId];
-      if (!video || !progress) return 0;
-      return progress / video.duration;
+    const video = videoData[videoId];
+    const progress = videoProgress[videoId];
+    if (!video || !progress) return 0;
+    return progress / video.duration;
+  };
+  const tabCount = () => {
+    const { tabs } = data;
+    if (onlyShowVideosWithProgress()) {
+      return Object.keys(tabs).filter((videoId) => {
+        return getVideoProgress(videoId) > 0;
+      }).length;
     }
+
+    return Object.keys(tabs).length;
+  };
+
+  const sortedTabs = () => {
+    const tabs = data.tabs;
+    const videoData = data.videoData;
 
     return Object.keys(tabs).sort((videoIdA, videoIdB) => {
       const videoA = videoData[videoIdA];
@@ -82,7 +96,7 @@ export function ActiveTabsPane(props: Props) {
   return (
     <div>
       <PopupHeader
-        tabCount={Object.keys(tabs()).length}
+        tabCount={tabCount()}
         totalLength={data.totalLength}
         remainingLength={data.remainingLength}
       />
@@ -92,17 +106,15 @@ export function ActiveTabsPane(props: Props) {
           {(videoId) => {
             const progress = () => videoProgress()[videoId ?? ""];
 
-            if (onlyShowVideosWithProgress() && !progress()) {
-              return null;
-            }
-
             return (
-              <VideoItem
-                videoId={videoId}
-                progress={progress()}
-                tab={tabs()[videoId]}
-                info={videoInfo()[videoId]}
-              />
+              <Show when={!onlyShowVideosWithProgress() || !!progress()}>
+                <VideoItem
+                  videoId={videoId}
+                  progress={progress()}
+                  tab={tabs()[videoId]}
+                  info={videoInfo()[videoId]}
+                />
+              </Show>
             );
           }}
         </For>

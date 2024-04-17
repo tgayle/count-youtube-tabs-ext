@@ -110,6 +110,13 @@ export class YoutubeObserver {
           return null;
         }
 
+        if (tab.discarded) {
+          console.info(
+            `Skipping tab ${tab.id} - ${tab.title} (state=discarded)`
+          );
+          return null;
+        }
+
         try {
           const [result] = await chrome.scripting.executeScript({
             target: {
@@ -136,7 +143,14 @@ export class YoutubeObserver {
 
           return { videoId: videoId, ...result.result };
         } catch (e) {
-          console.error("couldn't query tab", tab);
+          // Chrome actually won't let a scripting extension access a tab
+          // that was created before the extension was loaded, so during
+          // development, you'll see this a lot.
+
+          if (e instanceof Error && e.message.includes("respective host")) {
+            return null;
+          }
+          console.error("couldn't query tab", tab, e);
         }
       }
     );
