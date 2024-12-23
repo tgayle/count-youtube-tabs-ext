@@ -166,9 +166,11 @@ export class YoutubeObserver {
       videos: videoProgress
         .filter((it): it is NonNullable<typeof it> => !!it)
         .reduce((map, video) => {
-          if (video.videoId) {
+          // TODO: We should better model videos which aren't available
+          //   anymore or otherwise don't contain all required info.
+          if (video.videoId && typeof video.currentTime === "number") {
+            map[video.videoId!] = +video.currentTime.toFixed();
           }
-          map[video.videoId!] = +video.currentTime!.toFixed();
           return map;
         }, {} as Record<string, number>),
     };
