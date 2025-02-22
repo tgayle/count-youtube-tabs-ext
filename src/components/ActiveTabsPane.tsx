@@ -2,7 +2,7 @@ import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
 import { onlyShowVideosWithProgressAtom } from "../state";
-import { For, onCleanup, Show } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
@@ -22,6 +22,8 @@ export function ActiveTabsPane(props: Props) {
     videoData: {},
     videoProgress: {},
   });
+
+  const altMode = useAltMode();
 
   const refresh = async () => {
     const res = await chrome.runtime.sendMessage<string, DataResponse>("data");
@@ -113,6 +115,7 @@ export function ActiveTabsPane(props: Props) {
                   progress={progress()}
                   tab={tabs()[videoId]}
                   info={videoInfo()[videoId]}
+                  altMode={altMode()}
                 />
               </Show>
             );
@@ -121,4 +124,27 @@ export function ActiveTabsPane(props: Props) {
       </ul>
     </div>
   );
+}
+
+function useAltMode() {
+  const [altMode, setAltMode] = createSignal(false);
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    setAltMode(e.ctrlKey);
+  };
+
+  const onKeyUp = (e: KeyboardEvent) => {
+    setAltMode(e.ctrlKey);
+  };
+
+  window.addEventListener("keydown", onKeyDown);
+
+  window.addEventListener("keyup", onKeyUp);
+
+  onCleanup(() => {
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
+  });
+
+  return altMode;
 }
