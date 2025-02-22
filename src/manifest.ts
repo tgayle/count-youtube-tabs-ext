@@ -9,7 +9,7 @@ export default defineManifest({
   version: "1.0.0",
   manifest_version: 3,
   permissions: ["tabs", "identity", "scripting", "contextMenus"],
-  host_permissions: ["https://www.youtube.com/watch*"],
+  host_permissions: ["https://www.youtube.com/*"],
   action: {
     default_popup: "src/popup.html",
   },

@@ -1,10 +1,17 @@
 import { VideoId } from "./api";
 
 export async function getAllVideoTabs() {
-  return await chrome.tabs.query({
+  const videos = await chrome.tabs.query({
     discarded: false,
     url: "https://www.youtube.com/watch*",
   });
+
+  const shorts = await chrome.tabs.query({
+    discarded: false,
+    url: "https://www.youtube.com/shorts/*",
+  });
+
+  return shorts.concat(videos);
 }
 
 export async function getTabsByVideoId() {
