@@ -13,7 +13,7 @@ export class YoutubeObserver {
     tab: chrome.tabs.Tab | null
   ) => void | Promise<void>;
 
-  get openVideoTabsById() {
+  get openVideoTabsById(): Record<VideoId, chrome.tabs.Tab> {
     return this.openVideos;
   }
 
@@ -125,19 +125,22 @@ export class YoutubeObserver {
             func: () => {
               const video = document.querySelector("video");
 
-              if (!video) return null;
+              let duration: number = 0;
+              let currentTime: number = 0;
 
-              const duration = video.duration;
-              const currentTime = video.currentTime;
+              if (video) {
+                duration = video.duration;
+                currentTime = video.currentTime;
+              }
 
-              const r = {
+              const result = {
                 duration,
                 currentTime,
               };
 
-              console.log("[YT Length Counter]:", r);
+              console.log("[YT Length Counter]:", result);
 
-              return r;
+              return result;
             },
           });
 
@@ -151,6 +154,7 @@ export class YoutubeObserver {
             return null;
           }
           console.error("couldn't query tab", tab, e);
+          return null;
         }
       }
     );
