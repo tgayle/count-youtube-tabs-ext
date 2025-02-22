@@ -60,7 +60,9 @@ async function submitNewVideos(...ids: VideoId[]) {
   }
 }
 
+// @ts-expect-error
 globalThis.tabWatcher = tabWatcher;
+// @ts-expect-error
 globalThis.videoFetcher = videoFetcher;
 
 tabWatcher.onTabUpdated = async (videoId) => {
@@ -68,7 +70,17 @@ tabWatcher.onTabUpdated = async (videoId) => {
 };
 
 tabWatcher.onTabRemoved = (videoId) => {
-  videoFetcher.removeVideo(videoId);
+  const currentCachedVideos = new Set([
+    videoId,
+    ...Object.keys(videoFetcher.videoDataById),
+  ]);
+  const openVideos = new Set(Object.keys(tabWatcher.openVideoTabsById));
+
+  const videosToRemove = currentCachedVideos.difference(openVideos);
+
+  console.debug("Removing videos with no open tabs", videosToRemove);
+  videoFetcher.removeVideo(...videosToRemove);
+
   onVideoData();
 };
 
