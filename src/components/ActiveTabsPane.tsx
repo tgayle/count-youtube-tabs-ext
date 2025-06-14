@@ -2,7 +2,7 @@ import type { DataResponse } from "../background";
 import { PopupHeader } from "./PopupHeader";
 import { VideoItem } from "./VideoItem";
 import { onlyShowVideosWithProgressAtom } from "../state";
-import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { createAutoAnimateDirective } from "@formkit/auto-animate/solid";
 
@@ -30,12 +30,20 @@ export function ActiveTabsPane(props: Props) {
     setData(res);
   };
 
-  const timer = setInterval(refresh, 250);
-  refresh();
+  let timer: NodeJS.Timeout | undefined;
   const onMessage = (message: string) => {
     if (message === "refresh") refresh();
   };
   chrome.runtime.onMessage.addListener(onMessage);
+
+  const schedule = () => {
+    timer = setTimeout(() => refresh().finally(schedule), 250);
+  };
+
+  onMount(() => {
+    refresh();
+    schedule();
+  });
 
   onCleanup(() => {
     clearInterval(timer);

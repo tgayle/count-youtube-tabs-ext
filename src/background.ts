@@ -24,15 +24,31 @@ export type DataResponse = {
   remainingLength: number;
 };
 
+let activeJob: ReturnType<YoutubeObserver["getRemainingVideoRuntime"]> | null =
+  null;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message);
 
   if (message !== "data") return;
 
   (async () => {
+    const start = Date.now();
+    console.time("read " + start);
     const unadjustedVideoLength = videoFetcher.totalRuntime;
-    const { totalDuration: watchedDuration, videos } =
-      await tabWatcher.getRemainingVideoRuntime();
+    const initialJob = activeJob;
+    if (activeJob) {
+      console.info("reusing existing job");
+    } else {
+      activeJob = tabWatcher.getRemainingVideoRuntime();
+    }
+    const { totalDuration: watchedDuration, videos } = await activeJob;
+
+    // The request that created the job will be the one to clean up.
+    if (!initialJob) {
+      activeJob = null;
+    }
+
     const adjustedLength = unadjustedVideoLength - watchedDuration;
 
     sendResponse({
@@ -43,6 +59,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       totalLength: unadjustedVideoLength,
       remainingLength: adjustedLength,
     } satisfies DataResponse);
+    console.timeEnd("read " + start);
   })();
   return true;
 });
