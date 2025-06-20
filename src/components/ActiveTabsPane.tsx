@@ -138,11 +138,11 @@ function useAltMode() {
   const [altMode, setAltMode] = createSignal(false);
 
   const onKeyDown = (e: KeyboardEvent) => {
-    setAltMode(e.ctrlKey);
+    setAltMode(e.ctrlKey || e.metaKey);
   };
 
   const onKeyUp = (e: KeyboardEvent) => {
-    setAltMode(e.ctrlKey);
+    setAltMode(e.ctrlKey || e.metaKey);
   };
 
   window.addEventListener("keydown", onKeyDown);
